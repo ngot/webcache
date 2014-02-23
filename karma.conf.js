@@ -13,6 +13,7 @@ basePath = '.';
 files = [
 	JASMINE,
 	JASMINE_ADAPTER,
+	'src/cache.js',
 	'test/*.js'
 ];
 
@@ -24,10 +25,11 @@ exclude = [
 // possible values: 'dots', 'progress', 'junit', 'teamcity'
 // CLI --reporters progress
 reporters = ['progress', 'dots'];
+//reporters = ['progress'];
 
 junitReporter = {
 	// will be resolved to basePath (in the same way as files/exclude patterns)
-	outputFile: 'test-results.xml'
+//	outputFile: 'test-results.xml'
 };
 
 // web server port
@@ -69,7 +71,8 @@ captureTimeout = 5000;
 
 // Auto run tests on start (when browsers are captured) and exit
 // CLI --single-run --no-single-run
-singleRun = true;
+//singleRun = true;
+singleRun = false;
 
 // report which specs are slower than 500ms
 // CLI --report-slower-than 500

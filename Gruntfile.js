@@ -54,8 +54,8 @@ module.exports = function (grunt) {
 	 */
 	require('load-grunt-tasks')(grunt);
 
-  grunt.registerTask('test-dev', ['karma:unit']);
-  grunt.registerTask('test-ci', ['karma:continuous']);
+  grunt.registerTask('test-unit', ['karma:unit']);
+  grunt.registerTask('test-continuous', ['karma:continuous']);
   grunt.registerTask('build', ['clean:build', 'uglify', 'copy:build']);
-  grunt.registerTask('default', ['test-dev']);
+  grunt.registerTask('default', ['test-' + env]);
 };

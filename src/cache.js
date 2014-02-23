@@ -1,25 +1,5 @@
-;(function (name, definition) {
-	console.log("run");
-	var hasDefine = typeof define === 'function';
-	var hasExports = typeof module !== 'undefined' && module.exports;
+(function (w) {
 
-	if (hasDefine) {
-		// AMD Module or CMD Module
-		define(definition);
-	} else if (hasExports) {
-		// Node.js Module
-		module.exports = function () {
-
-		};
-
-	} else {
-		// Assign to common namespaces or simply the global object (window)
-		this[name] = definition();
-	}
-
-})('webcache', function () {
-
-	return function () {
 		"use strict";
 
 		var _store = {
@@ -205,12 +185,5 @@
 
 		}
 
-		return WebCache;
-	};
-
-});
-
-
-//define("webcache", function() {
-//
-//	});
+	w.webcache = WebCache;
+})(window);
