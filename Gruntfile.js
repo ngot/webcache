@@ -4,17 +4,20 @@ module.exports = function (grunt) {
   grunt.initConfig({
     readme: 'README.md',
     pkg: grunt.file.readJSON('package.json'),
-    karma: {
-      options: {
-        configFile: 'test/karma.conf.js'
-      },
-      unit: {
-      },
-      continuous: {
-        autoWatch: false,
-        singleRun: true
-      }
-    },
+	  karma: {
+		  options: {
+			  configFile: 'karma.conf.js'
+		  },
+		  unit:{
+
+		  },
+		  //continuous integration mode: run tests once in PhantomJS browser.
+		  continuous: {
+			  singleRun: true,
+			  browsers: ['PhantomJS']
+		  }
+	  },
+
     uglify: {
       build: {
         files: {
@@ -51,7 +54,8 @@ module.exports = function (grunt) {
 	 */
 	require('load-grunt-tasks')(grunt);
 
-  grunt.registerTask('test', ['karma:' + env]);
+  grunt.registerTask('test-dev', ['karma:unit']);
+  grunt.registerTask('test-ci', ['karma:continuous']);
   grunt.registerTask('build', ['clean:build', 'uglify', 'copy:build']);
-  grunt.registerTask('default', ['test']);
+  grunt.registerTask('default', ['test-dev']);
 };

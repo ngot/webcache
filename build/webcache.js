@@ -1,170 +1,187 @@
-define("jModo.json2", ["jModo"], function (g) {
-	"use strict";
+define("webcache", function() {
+		"use strict";
 
-	if (!window.JSON)
-		window.JSON = {};
-
-	function f(n) {
-		return n < 10 ? "0" + n : n;
-	}
-	if (typeof Date.prototype.toJSON !== "function") {
-		Date.prototype.toJSON = function (key) {
-			return isFinite(this.valueOf()) ? this.getUTCFullYear() + "-" + f(this.getUTCMonth() + 1) + "-" + f(this.getUTCDate()) + "T" + f(this.getUTCHours()) + ":" + f(this.getUTCMinutes()) + ":" + f(this.getUTCSeconds()) + "Z" : null;
+		var _store = {
+			removeItem: function(k) {
+				delete this[k];
+			}
 		};
-		String.prototype.toJSON = Number.prototype.toJSON = Boolean.prototype.toJSON = function (key) {
-			return this.valueOf();
-		};
-	}
-	var cx = new RegExp('[\\u0000\\u00ad\\u0600-\\u0604\\u070f\\u17b4\\u17b5\\u200c-\\u200f\\u2028-\\u202f\\u2060-\\u206f\\ufeff\\ufff0-\\uffff]', 'g'),
-		escapable = new RegExp('[\\\\\\"\\x00-\\x1f\\x7f-\\x9f\\u00ad\\u0600-\\u0604\\u070f\\u17b4\\u17b5\\u200c-\\u200f\\u2028-\\u202f\\u2060-\\u206f\\ufeff\\ufff0-\\uffff]', 'g'),
-		re1 = new RegExp("^[\\],:{}\\s]*$"),
-		re2 = new RegExp("\\\\(?:[\"\\\\\\/bfnrt]|u[0-9a-fA-F]{4})", "g"),
-		re3 = new RegExp("\"[^\"\\\\\\n\\r]*\"|true|false|null|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?", "g"),
-		re4 = new RegExp("(?:^|:|,)(?:\\s*\\[)+", "g"),
-		gap,
-		indent,
-		meta = {
-			"\b" : "\\b",
-			"\t" : "\\t",
-			"\n" : "\\n",
-			"\f" : "\\f",
-			"\r" : "\\r",
-			'"' : '\\"',
-			"\\" : "\\\\"
-		},
-		rep;
+		try {
+			if ("localStorage" in window && window["localStorage"]){
+				var testStorage = window["localStorage"];
+				testStorage.setItem("test_storage", "");
+				testStorage.removeItem("test_storage");
+				_store = window["localStorage"];
+			}
+		} catch (e) {}
 
-	function quote(string) {
-		escapable.lastIndex = 0;
-		return escapable.test(string) ? '"' + string.replace(escapable, function (a) {
-			var c = meta[a];
-			return typeof c === "string" ? c : "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
-		}) + '"' : '"' + string + '"';
-	}
+		var isIE = "ActiveXObject" in window;
 
-	function str(key, holder) {
-		var i,
-			k,
-			v,
-			length,
-			mind = gap,
-			partial,
-			value = holder[key];
-		if (value && typeof value === "object" && typeof value.toJSON === "function") {
-			value = value.toJSON(key);
-		}
-		if (typeof rep === "function") {
-			value = rep.call(holder, key, value);
-		}
-		switch (typeof value) {
-			case "string":
-				return quote(value);
-			case "number":
-				return isFinite(value) ? String(value) : "null";
-			case "boolean":
-			case "null":
-				return String(value);
-			case "object":
-				if (!value) {
-					return "null";
+		function WebCache(name, size, timeout) {
+			var datas = {};
+			var frees = [];
+			var count = 0;
+
+			timeout = timeout || 0;
+
+			function load() {
+				function _new() {
+					datas = {};
+					frees = [];
+					count = size;
+					for (var i = 0; i < size; i++)
+						frees.push(i);
 				}
-				gap += indent;
-				partial = [];
-				if (Object.prototype.toString.apply(value) === "[object Array]") {
-					length = value.length;
-					for (i = 0; i < length; i += 1) {
-						partial[i] = str(i, value) || "null";
+
+				try {
+					count = new Number(_store[name + '_count']);
+					if (count != size) {
+						for (var i = 0; i < count; i++) {
+							_store.removeItem(name + '_' + i);
+							_store.removeItem(name + '_' + i + '_time');
+						}
+						_store.removeItem(name + '_datas');
+						_store.removeItem(name + '_frees');
+						_store.removeItem(name + '_count');
+
+						_new();
+					} else {
+						datas = JSON.parse(_store[name + '_datas']);
+						frees = JSON.parse(_store[name + '_frees']);
 					}
-					v = partial.length === 0 ? "[]" : gap ? "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]" : "[" + partial.join(",") + "]";
-					gap = mind;
+				} catch (e) {
+					_new();
+				}
+			}
+
+			function save() {
+				_store[name + '_datas'] = JSON.stringify(datas);
+				_store[name + '_frees'] = JSON.stringify(frees);
+				_store[name + '_count'] = count.toString();
+			}
+
+			function _del(k) {
+				frees.push(datas[k]);
+				delete datas[k];
+				return false;
+			}
+
+			function _has(k) {
+				if (datas.hasOwnProperty(k)) {
+					if (timeout <= 0)
+						return true;
+
+					if (new Date().getTime() - new Number(_store[name + '_' + datas[k] + '_time']) >= timeout)
+						return _del(k);
+					return true;
+				} else
+					return false;
+			}
+
+			function _clean() {
+				if (timeout > 0) {
+					for (var k in datas)
+						_has(k);
+				}
+			}
+
+			function _put_data(n, v) {
+				_store[name + '_' + n] = JSON.stringify(v);
+				_store[name + '_' + n + '_time'] = new Date().getTime();
+				return v;
+			}
+
+			function _put(k, v) {
+				var n = frees.pop();
+				datas[k] = n;
+
+				return _put_data(n, v);
+			}
+
+			function access(k) {
+				var n = datas[k];
+
+				delete datas[k];
+
+				if (isIE) {
+					var datas1 = {};
+
+					for (var k1 in datas)
+						datas1[k1] = datas[k1];
+					datas = datas1;
+				}
+				datas[k] = n;
+
+				return n;
+			}
+
+			function _update(k, v) {
+				return _put_data(access(k), v);
+			}
+
+			// exists
+			this.has = function(k) {
+				load();
+
+				return _has(k);
+			}
+
+			// fetch data
+			this.get = function(k) {
+				load();
+
+				if (_has(k)) {
+					var v = JSON.parse(_store[name + '_' + access(k)]);
+					save();
 					return v;
 				}
-				if (rep && typeof rep === "object") {
-					length = rep.length;
-					for (i = 0; i < length; i += 1) {
-						k = rep[i];
-						if (typeof k === "string") {
-							v = str(k, value);
-							if (v) {
-								partial.push(quote(k) + (gap ? ": " : ":") + v);
-							}
-						}
-					}
-				} else {
-					for (k in value) {
-						if (Object.hasOwnProperty.call(value, k)) {
-							v = str(k, value);
-							if (v) {
-								partial.push(quote(k) + (gap ? ": " : ":") + v);
-							}
-						}
-					}
-				}
-				v = partial.length === 0 ? "{}" : gap ? "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}" : "{" + partial.join(",") + "}";
-				gap = mind;
-				return v;
-		}
-	}
-	if (typeof JSON.stringify !== "function") {
-		JSON.stringify = function (value, replacer, space) {
-			var i;
-			gap = "";
-			indent = "";
-			if (typeof space === "number") {
-				for (i = 0; i < space; i += 1) {
-					indent += " ";
-				}
-			} else {
-				if (typeof space === "string") {
-					indent = space;
-				}
 			}
-			rep = replacer;
-			if (replacer && typeof replacer !== "function" && (typeof replacer !== "object" || typeof replacer.length !== "number")) {
-				throw new Error("JSON.stringify");
-			}
-			return str("", {
-				"" : value
-			});
-		};
-	}
-	if (typeof JSON.parse !== "function") {
-		JSON.parse = function (text, reviver) {
-			var j;
 
-			function walk(holder, key) {
-				var k,
-					v,
-					value = holder[key];
-				if (value && typeof value === "object") {
-					for (k in value) {
-						if (Object.hasOwnProperty.call(value, k)) {
-							v = walk(value, k);
-							if (v !== undefined) {
-								value[k] = v;
-							} else {
-								delete value[k];
-								value[k] = null;
+			// update or insert
+			this.put = function(k, v) {
+				load();
+
+				if (_has(k))
+					_update(k, v);
+				else {
+					if (frees.length == 0) {
+						for (var k1 in datas) {
+							if (_has(k1)) {
+								if (frees.length == 0)
+									_del(k1);
+								break;
 							}
 						}
 					}
+
+					_put(k, v);
 				}
-				return reviver.call(holder, key, value);
+
+				save();
 			}
-			text = String(text);
-			cx.lastIndex = 0;
-			if (cx.test(text)) {
-				text = text.replace(cx, function (a) {
-					return "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
-				});
+
+			// update if exists
+			this.set = function(k, v) {
+				load();
+				if (_has(k)) {
+					_update(k, v);
+					save();
+				}
 			}
-			if (re1.test(text.replace(re2, "@").replace(re3, "]").replace(re4, ""))) {
-				j = eval("(" + text + ")");
-				return typeof reviver === "function" ? walk({
-					"" : j
-				}, "") : j;
+
+			this.datas = function() {
+				var ds = {};
+
+				load();
+				_clean();
+
+				for (var k in datas) {
+					ds[k] = JSON.parse(_store[name + '_' + datas[k]]);
+				}
+				return ds;
 			}
-			throw new SyntaxError("JSON.parse");
-		};
-	}
-});
+
+		}
+
+		return WebCache;
+	});
