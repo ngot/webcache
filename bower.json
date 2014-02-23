@@ -1,0 +1,20 @@
+{
+  "name": "webcache",
+  "version": "0.0.1",
+  "main": "./build/webcache.js",
+  "description": "cache tool for browser",
+  "author": "ngot",
+  "homepage": "https://github.com/ngot/webcache",
+  "license": "MIT",
+  "ignore": [
+    "node_modules",
+    "bower_components",
+    "components",
+    "test*",
+    "Gruntfile.js",
+    "package.json"
+  ],
+  "dependencies": {
+    "json2": "*"
+  }
+}
