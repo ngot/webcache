@@ -3,7 +3,7 @@ describe('grunt-karma', function(){
 	describe('one', function(){
 
 		beforeEach(function(){
-			console.log("webcache:",window);
+//			console.log("webcache:",window);
 		});
 
 		it('should be awesome', function(){
