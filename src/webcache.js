@@ -120,14 +120,12 @@ define("webcache", ["json2"], function () {
 			return _put_data(access(k), v);
 		}
 
-		// exists
 		this.has = function (k) {
 			load();
 
 			return _has(k);
 		}
 
-		// fetch data
 		this.get = function (k) {
 			load();
 
@@ -138,7 +136,6 @@ define("webcache", ["json2"], function () {
 			}
 		}
 
-		// update or insert
 		this.put = function (k, v) {
 			load();
 
@@ -161,7 +158,6 @@ define("webcache", ["json2"], function () {
 			save();
 		}
 
-		// update if exists
 		this.set = function (k, v) {
 			load();
 			if (_has(k)) {
