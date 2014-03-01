@@ -16,7 +16,7 @@
     "karma-chai": "~0.1.0"
   },
   "scripts": {
-    "test": "make run-tests"
+    "test": "./node_modules/.bin/karma start"
   },
   "keywords": [
     "webcache"
