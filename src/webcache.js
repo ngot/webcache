@@ -1,4 +1,4 @@
-define("webcache", ["json2"], function () {
+define("webcache", function () {
 	"use strict";
 
 	var _store = {
@@ -14,11 +14,12 @@ define("webcache", ["json2"], function () {
 			_store = window["localStorage"];
 		}
 	} catch (e) {
+		throw e;
 	}
 
 	var isIE = "ActiveXObject" in window;
 
-	function WebCache(name, size, timeout) {
+	return function (name, size, timeout) {
 		var datas = {};
 		var frees = [];
 		var count = 0;
@@ -35,7 +36,7 @@ define("webcache", ["json2"], function () {
 			}
 
 			try {
-				count = new Number(_store[name + '_count']);
+				count = Number(_store[name + '_count']);
 				if (count != size) {
 					for (var i = 0; i < count; i++) {
 						_store.removeItem(name + '_' + i);
@@ -72,7 +73,7 @@ define("webcache", ["json2"], function () {
 				if (timeout <= 0)
 					return true;
 
-				if (new Date().getTime() - new Number(_store[name + '_' + datas[k] + '_time']) >= timeout)
+				if (new Date().getTime() - Number(_store[name + '_' + datas[k] + '_time']) >= timeout)
 					return _del(k);
 				return true;
 			} else
@@ -82,7 +83,8 @@ define("webcache", ["json2"], function () {
 		function _clean() {
 			if (timeout > 0) {
 				for (var k in datas)
-					_has(k);
+					if (datas.hasOwnProperty(k))
+						_has(k);
 			}
 		}
 
@@ -107,8 +109,11 @@ define("webcache", ["json2"], function () {
 			if (isIE) {
 				var datas1 = {};
 
-				for (var k1 in datas)
-					datas1[k1] = datas[k1];
+				for (var k1 in datas) {
+					if (datas.hasOwnProperty(k1))
+						datas1[k1] = datas[k1];
+				}
+
 				datas = datas1;
 			}
 			datas[k] = n;
@@ -124,7 +129,7 @@ define("webcache", ["json2"], function () {
 			load();
 
 			return _has(k);
-		}
+		};
 
 		this.get = function (k) {
 			load();
@@ -133,8 +138,9 @@ define("webcache", ["json2"], function () {
 				var v = JSON.parse(_store[name + '_' + access(k)]);
 				save();
 				return v;
-			}
-		}
+			} else
+				return undefined;
+		};
 
 		this.put = function (k, v) {
 			load();
@@ -144,7 +150,7 @@ define("webcache", ["json2"], function () {
 			else {
 				if (frees.length == 0) {
 					for (var k1 in datas) {
-						if (_has(k1)) {
+						if (datas.hasOwnProperty(k1) && _has(k1)) {
 							if (frees.length == 0)
 								_del(k1);
 							break;
@@ -156,7 +162,7 @@ define("webcache", ["json2"], function () {
 			}
 
 			save();
-		}
+		};
 
 		this.set = function (k, v) {
 			load();
@@ -164,7 +170,7 @@ define("webcache", ["json2"], function () {
 				_update(k, v);
 				save();
 			}
-		}
+		};
 
 		this.datas = function () {
 			var ds = {};
@@ -173,12 +179,11 @@ define("webcache", ["json2"], function () {
 			_clean();
 
 			for (var k in datas) {
-				ds[k] = JSON.parse(_store[name + '_' + datas[k]]);
+				if (datas.hasOwnProperty(k))
+					ds[k] = JSON.parse(_store[name + '_' + datas[k]]);
 			}
 			return ds;
 		}
 
 	}
-
-	return WebCache;
 });
